@@ -1,0 +1,52 @@
+# Copy to config/profile.yaml (gitignored) and fill in your own data.
+name: [NAME]
+headline: [HEADLINE]
+location: [CITY]
+availability: [AVAILABILITY]
+education:
+  - school: [SCHOOL]
+    degree: [DEGREE]
+    period: [PERIOD]
+links:
+  github: https://github.com/[USERNAME]
+  email: [EMAIL]
+  phone: "[PHONE]"
+cv:
+  markdown: path/to/cv.md
+  pdf: path/to/cv.pdf
+answers:
+  availability: [AVAILABILITY]
+  salary_expectation: [SALARY]
+  start_date: [START_DATE]
+  why_this_company: ""
+preferences:
+  job_types: [internship]
+  exclude_keywords: [HR, 人力资源, 人事实习, 销售, 商务拓展]
+  allow_external_redirect: false
+  locations: [remote, Beijing, Shanghai, Shenzhen, Guangzhou, Hangzhou]
+  max_per_run: 10
+writer:
+  backend: api
+  api:
+    provider: deepseek
+    base_url_env: JOB_AGENT_LLM_BASE_URL
+    api_key_env: JOB_AGENT_LLM_API_KEY
+    model: deepseek-chat
+  local_chat:
+    provider: kimi
+    use_account_memory: true
+    fresh_conversation_per_job: true
+  memory_profile: config/memory.md
+  max_chars: 300
+submission:
+  require_approval: true
+  allow_full_auto: true
+style:
+  language: auto
+  length: 150-300
+  rules:
+    - 不罗列简历项目；简历里有的不重复
+    - 高概念、描绘蓝图
+    - 结合 CoreBall：开源、被真正使用；"它存在、有人用" > "这是我做的"
+    - 不写口号、排比、"赋能/闭环/生态"
+    - 少用套话："正是我想体验的""让数据说话""如果有机会"
