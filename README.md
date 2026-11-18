@@ -1,5 +1,7 @@
 # job-agent
 
+**English** | [中文](README.zh-CN.md)
+
 A local, open-source job-application agent. It discovers and filters jobs,
 scores them against your profile, drafts a tailored message (optionally
 using your Kimi / Doubao / ChatGPT account memory), fills the form, pauses
@@ -123,3 +125,7 @@ platform-independent.
 - `config/profile.yaml`, `config/memory.md`, `data/`, `.browser/`, and
   `*.pdf` are gitignored.
 - API keys come from environment variables.
+
+## License
+
+MIT
