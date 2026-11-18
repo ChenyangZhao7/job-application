@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from job_agent.models import Job, MatchResult
 from job_agent.profile import Profile
 
@@ -22,8 +24,18 @@ def score_job(job: Job, profile: Profile) -> MatchResult:
     reasons: list[str] = []
 
     for keyword in profile.preferences.exclude_keywords:
-        if keyword.strip() and keyword.lower() in text:
-            return MatchResult(score=0, reasons=[f"excluded keyword: {keyword}"], excluded=True)
+        token = keyword.strip()
+        if not token:
+            continue
+        if token.isascii():
+            if re.search(rf"\b{re.escape(token)}\b", text, re.IGNORECASE):
+                return MatchResult(
+                    score=0, reasons=[f"excluded keyword: {keyword}"], excluded=True
+                )
+        elif token.lower() in text:
+            return MatchResult(
+                score=0, reasons=[f"excluded keyword: {keyword}"], excluded=True
+            )
 
     if job.external_redirect and not profile.preferences.allow_external_redirect:
         return MatchResult(score=0, reasons=["external redirect not allowed"], excluded=True)
@@ -40,7 +52,10 @@ def score_job(job: Job, profile: Profile) -> MatchResult:
     score = 40
     profile_text = profile.model_dump_json().lower()
     for keyword in KEYWORDS:
-        if keyword in text and keyword in profile_text:
+        if (
+            re.search(rf"\b{re.escape(keyword)}\b", text)
+            and keyword in profile_text
+        ):
             score += 8
     score = min(score, 80)
 

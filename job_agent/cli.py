@@ -34,6 +34,10 @@ def _tracker() -> Tracker:
     return tracker
 
 
+def _resolve_auto(yes: bool, profile: Profile) -> bool:
+    return bool(yes and profile.submission.allow_full_auto)
+
+
 def _make_writer(writer_name: str, profile: Profile, session: BrowserSession):
     if writer_name == "api":
         config = profile.writer.api
@@ -44,22 +48,34 @@ def _make_writer(writer_name: str, profile: Profile, session: BrowserSession):
             )
         from openai import OpenAI
 
-        client = OpenAI(
-            api_key=api_key,
-            base_url=os.getenv(config.base_url_env) or None,
-        )
-        return ApiWriter(
-            client,
-            model=config.model,
-            prompt_path=Path("config/prompts/writer.md"),
-            max_chars=profile.writer.max_chars,
-            memory=load_memory(profile.writer.memory_profile),
+        base_url = os.getenv(config.base_url_env)
+        if not base_url and config.provider == "deepseek":
+            base_url = "https://api.deepseek.com"
+        client = OpenAI(api_key=api_key, base_url=base_url or None)
+        memory_path = Path(profile.writer.memory_profile)
+        return (
+            ApiWriter(
+                client,
+                model=config.model,
+                prompt_path=Path("config/prompts/writer.md"),
+                max_chars=profile.writer.max_chars,
+                memory=load_memory(memory_path),
+                provider=config.provider,
+                memory_version="1" if memory_path.exists() else "",
+            ),
+            None,
         )
     if writer_name == "local_chat":
-        return LocalChatWriter(
-            session,
-            provider=profile.writer.local_chat.provider,
-            fresh_conversation_per_job=profile.writer.local_chat.fresh_conversation_per_job,
+        provider = profile.writer.local_chat.provider
+        writer_session = BrowserSession(Path(".browser") / f"writer-{provider}")
+        writer_session.start()
+        return (
+            LocalChatWriter(
+                writer_session,
+                provider=provider,
+                fresh_conversation_per_job=profile.writer.local_chat.fresh_conversation_per_job,
+            ),
+            writer_session,
         )
     raise typer.BadParameter("--writer must be api or local_chat")
 
@@ -89,34 +105,47 @@ def run(
     dry_run: bool = typer.Option(False, "--dry-run"),
     yes: bool = typer.Option(False, "--yes"),
     limit: int = typer.Option(10, "--limit"),
+    retry_skipped: bool = typer.Option(False, "--retry-skipped"),
     profile: Path = typer.Option(DEFAULT_PROFILE, "--profile"),
 ):
     """Discover, score, draft, fill, approve, and submit jobs."""
     loaded = _load_profile(profile)
     session = BrowserSession(Path(".browser") / platform)
     session.start()
+    writer_session = None
     try:
         if platform != "bonjour":
             raise typer.BadParameter(f"unsupported platform: {platform}")
         adapter = BonjourAdapter(session)
-        writer_backend = _make_writer(writer, loaded, session)
+        writer_backend, writer_session = _make_writer(writer, loaded, session)
+        auto = _resolve_auto(yes, loaded)
+        if yes and not auto:
+            rprint(
+                "[yellow]--yes ignored: submission.allow_full_auto is false; "
+                "approval stays on.[/yellow]"
+            )
         tracker = _tracker()
+        if retry_skipped:
+            tracker.clear_skipped()
         report = Runner(
             adapter,
             writer_backend,
             tracker,
             loaded,
             dry_run=dry_run,
-            auto=yes,
-            limit=limit,
+            auto=auto,
+            limit=min(limit, loaded.preferences.max_per_run, 10),
         ).run()
         rprint(
             f"[bold]submitted[/bold]={report.submitted} "
             f"[bold]drafted[/bold]={report.drafted} "
             f"[bold]skipped[/bold]={report.skipped} "
-            f"[bold]failed[/bold]={report.failed}"
+            f"[bold]failed[/bold]={report.failed} "
+            f"[bold]unknown[/bold]={report.unknown}"
         )
     finally:
+        if writer_session is not None:
+            writer_session.close()
         session.close()
 
 

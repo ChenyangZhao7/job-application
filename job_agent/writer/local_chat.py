@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from job_agent.browser import BrowserSession
 from job_agent.models import AnswerSet, JobDetail
 from job_agent.profile import Profile
+from job_agent.writer.validation import detect_language
 
 PROVIDER_URLS = {
     "kimi": "https://www.kimi.com/",
@@ -44,8 +45,23 @@ class LocalChatWriter:
         self.session = session
         self.provider = provider
         self.fresh_conversation_per_job = fresh_conversation_per_job
+        self.backend = "local_chat"
+        self.memory_version = "account"
 
     def _build_prompt(self, detail: JobDetail, profile: Profile, questions: list[str]) -> str:
+        language = detect_language(detail, profile)
+        if language == "en":
+            return (
+                "Write a 80-200 word first-person message to the hiring team.\n"
+                "Do not list CV projects; use high-level, concrete thinking; no slogans.\n"
+                "Every factual claim must come from the profile below.\n\n"
+                f"Role: {detail.job.title} at {detail.job.company}\n"
+                f"Location: {detail.job.location}\n"
+                f"Description: {detail.job.description or detail.requirements}\n\n"
+                f"Profile:\n{profile.model_dump_json(indent=2)[:5000]}\n\n"
+                f"Questions: {questions}\n\n"
+                "Output only the message."
+            )
         return (
             "请写一段给招聘团队的话，中文，150-300 字。\n"
             "要求：第一人称；不要罗列简历项目；高概念、具体；"
@@ -65,7 +81,7 @@ class LocalChatWriter:
         detail: JobDetail,
         profile: Profile,
         questions: list[str] | None = None,
-    ) -> AnswerSet:
+    ) -> AnswerSet | None:
         page = self.session.page
         if page is None:
             raise RuntimeError("browser session is not started")
@@ -73,7 +89,8 @@ class LocalChatWriter:
         page.goto(PROVIDER_URLS[self.provider], wait_until="domcontentloaded")
         page.wait_for_timeout(1500)
         body = page.inner_text("body")
-        if "Phone number" in body or "Log in to sync chat history" in body and "Ask anything" not in body:
+        login_markers = ("Phone number", "Log in to sync chat history", "登录", "扫码")
+        if any(marker in body for marker in login_markers) and "Ask anything" not in body:
             self.session.pause_for_login(f"Log in to {self.provider}, then press Enter")
 
         editor = page.locator(".chat-input-editor").first
@@ -99,4 +116,6 @@ class LocalChatWriter:
             page.wait_for_timeout(1000)
 
         answer = extract_chat_answer(page.content())
+        if not answer:
+            return None
         return AnswerSet(message=answer, answers={}, attachments=[])

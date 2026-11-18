@@ -82,6 +82,13 @@ class Tracker:
                 (status, datetime.now(timezone.utc).isoformat(), platform, job_id),
             )
 
+    def clear_skipped(self) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                "DELETE FROM applications WHERE status LIKE 'skipped%' "
+                "OR status = 'already_applied'"
+            )
+
     def list(self, status: str | None = None) -> list[ApplicationRecord]:
         query = "SELECT * FROM applications"
         params: tuple[str, ...] = ()

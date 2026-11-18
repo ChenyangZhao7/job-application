@@ -4,7 +4,7 @@ from pathlib import Path
 
 from job_agent.models import AnswerSet, JobDetail
 from job_agent.profile import Profile
-from job_agent.writer.validation import parse_writer_json
+from job_agent.writer.validation import detect_language, parse_writer_json
 
 DEFAULT_PROMPT = """You write a short, first-person message to a hiring team.
 
@@ -33,14 +33,6 @@ Rules:
 """
 
 
-def _language(detail: JobDetail, profile: Profile) -> str:
-    if profile.style.language in {"zh", "en"}:
-        return profile.style.language
-    text = f"{detail.job.title} {detail.job.description} {detail.requirements}"
-    cjk = sum(1 for char in text if "\u4e00" <= char <= "\u9fff")
-    return "zh" if cjk > len(text) * 0.3 else "en"
-
-
 class ApiWriter:
     def __init__(
         self,
@@ -49,6 +41,8 @@ class ApiWriter:
         prompt_path: Path | None = None,
         max_chars: int = 300,
         memory: str = "",
+        provider: str = "deepseek",
+        memory_version: str = "",
     ):
         self.client = client
         self.model = model
@@ -56,8 +50,8 @@ class ApiWriter:
         self.max_chars = max_chars
         self.memory = memory
         self.backend = "api"
-        self.provider = model
-        self.memory_version = ""
+        self.provider = provider
+        self.memory_version = memory_version
 
     def _template(self) -> str:
         if self.prompt_path and Path(self.prompt_path).exists():
@@ -79,7 +73,7 @@ class ApiWriter:
             profile=profile.model_dump_json(indent=2)[:6000],
             memory=memory,
             questions=questions,
-            language=_language(detail, profile),
+            language=detect_language(detail, profile),
             max_chars=self.max_chars,
         )
 
@@ -89,7 +83,7 @@ class ApiWriter:
         profile: Profile,
         memory: str = "",
         questions: list[str] | None = None,
-    ) -> AnswerSet:
+    ) -> AnswerSet | None:
         prompt = self.build_prompt(detail, profile, memory or self.memory, questions or [])
         response = self.client.chat.completions.create(
             model=self.model,
@@ -102,13 +96,15 @@ class ApiWriter:
         raw = response.choices[0].message.content or ""
         data = parse_writer_json(raw)
         if data is None:
-            return AnswerSet(message="", answers={}, attachments=[])
-        message = str(data.get("message", ""))[: self.max_chars]
+            return None
+        message = str(data.get("message", "")).strip()
+        if not message:
+            return None
         answers = data.get("answers", {})
         if not isinstance(answers, dict):
             answers = {}
         return AnswerSet(
-            message=message,
+            message=message[: self.max_chars],
             answers={str(k): str(v) for k, v in answers.items()},
             attachments=[],
         )

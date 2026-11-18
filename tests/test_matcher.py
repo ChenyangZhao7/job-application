@@ -49,3 +49,8 @@ def test_scores_matching_job_above_threshold():
 def test_excludes_non_internship():
     r = score_job(job(title="Senior Engineer"), PROFILE)
     assert r.excluded is True
+
+
+def test_hr_substring_does_not_exclude_through():
+    r = score_job(job(description="Build things through the agent platform"), PROFILE)
+    assert r.excluded is False

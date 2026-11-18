@@ -15,6 +15,14 @@ from job_agent.models import (
 class PlatformAdapter(ABC):
     name: str
 
+    def ensure_login(self) -> None:
+        """Pause for manual login if the session is not authenticated."""
+        return None
+
+    def detect_unknown_required(self, form: ApplicationForm, answers: AnswerSet) -> list[str]:
+        """Return required fields that have no non-empty answer."""
+        return []
+
     @abstractmethod
     def login(self) -> None:
         raise NotImplementedError

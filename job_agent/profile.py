@@ -30,6 +30,7 @@ class Preferences(BaseModel):
     allow_external_redirect: bool = False
     locations: list[str] = Field(default_factory=list)
     max_per_run: int = 10
+    min_score: int = 60
 
 
 class WriterApiConfig(BaseModel):

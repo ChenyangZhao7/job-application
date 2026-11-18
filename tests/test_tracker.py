@@ -38,6 +38,16 @@ def test_duplicate_record_is_ignored(tmp_path: Path):
     assert len(t.list()) == 1
 
 
+def test_clear_skipped_keeps_submitted(tmp_path: Path):
+    t = Tracker(tmp_path / "db.sqlite")
+    t.init()
+    t.record(make_record("submitted", status="submitted"))
+    t.record(make_record("skipped", status="skipped"))
+    t.record(make_record("already", status="already_applied"))
+    t.clear_skipped()
+    assert [r.job_id for r in t.list()] == ["submitted"]
+
+
 def test_mark_and_follow_ups(tmp_path: Path):
     t = Tracker(tmp_path / "db.sqlite")
     t.init()

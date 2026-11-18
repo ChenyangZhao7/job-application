@@ -33,6 +33,21 @@ def test_clean_message_passes():
     assert validate_answer(a, PROFILE, "zh") == []
 
 
+def test_empty_message_fails():
+    a = AnswerSet(message="", answers={}, attachments=[])
+    assert validate_answer(a, PROFILE, "zh") == ["empty message"]
+
+
+def test_wrong_language_fails():
+    a = AnswerSet(message="I want to build agent memory. " * 10, answers={}, attachments=[])
+    assert any("language" in r for r in validate_answer(a, PROFILE, "zh"))
+
+
+def test_memory_grounding_passes():
+    a = AnswerSet(message=CLEAN + " 我在 Google 做过搜索。", answers={}, attachments=[])
+    assert validate_answer(a, PROFILE, "zh", memory="Google") == []
+
+
 def test_unsupported_claim_fails_grounding():
     a = AnswerSet(message="我在 Google 负责过搜索业务。", answers={}, attachments=[])
     assert any("grounding" in r for r in validate_answer(a, PROFILE, "zh"))

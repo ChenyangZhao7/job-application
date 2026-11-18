@@ -25,6 +25,7 @@ preferences:
   allow_external_redirect: false
   locations: [remote, Beijing, Shanghai, Shenzhen, Guangzhou, Hangzhou]
   max_per_run: 10
+  min_score: 60
 writer:
   backend: api
   api:

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11+, Typer, Pydantic v2, PyYAML, Playwright, OpenAI Python SDK (OpenAI-compatible), SQLite, pytest, pytest-asyncio, Rich.
 
-**Spec:** `Z:\ChenyangZhao CV\job-agent\docs\2026-11-18-job-application-agent-design.md`
+**Spec:** `docs/2026-11-18-job-application-agent-design.md`
 
 ## Global Constraints
 

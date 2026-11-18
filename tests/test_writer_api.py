@@ -23,7 +23,7 @@ class FakeClient:
         )
 
 
-def test_api_writer_generate_returns_answer():
+def _detail_and_profile():
     detail = JobDetail(job=Job(
         id="j1", platform="bonjour", title="AI Intern", company="C",
         location="Remote", url="https://example.com/j1",
@@ -33,6 +33,17 @@ def test_api_writer_generate_returns_answer():
         cv={"markdown": "cv.md", "pdf": "cv.pdf"},
         links={"github": "https://github.com/test"},
     )
+    return detail, profile
+
+
+def test_api_writer_generate_returns_answer():
+    detail, profile = _detail_and_profile()
     writer = ApiWriter(FakeClient('{"message":"hi","answers":{}}'), model="deepseek-chat", prompt_path=None)
     answer = writer.generate(detail, profile, memory="", questions=[])
     assert answer.message == "hi"
+
+
+def test_api_writer_invalid_json_returns_none():
+    detail, profile = _detail_and_profile()
+    writer = ApiWriter(FakeClient("not json"), model="deepseek-chat", prompt_path=None)
+    assert writer.generate(detail, profile, memory="", questions=[]) is None
