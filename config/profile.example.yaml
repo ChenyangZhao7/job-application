@@ -1,23 +1,23 @@
 # Copy to config/profile.yaml (gitignored) and fill in your own data.
-name: [NAME]
-headline: [HEADLINE]
-location: [CITY]
-availability: [AVAILABILITY]
+name: "[NAME]"
+headline: "[HEADLINE]"
+location: "[CITY]"
+availability: "[AVAILABILITY]"
 education:
-  - school: [SCHOOL]
-    degree: [DEGREE]
-    period: [PERIOD]
+  - school: "[SCHOOL]"
+    degree: "[DEGREE]"
+    period: "[PERIOD]"
 links:
   github: https://github.com/[USERNAME]
-  email: [EMAIL]
+  email: "[EMAIL]"
   phone: "[PHONE]"
 cv:
   markdown: path/to/cv.md
   pdf: path/to/cv.pdf
 answers:
-  availability: [AVAILABILITY]
-  salary_expectation: [SALARY]
-  start_date: [START_DATE]
+  availability: "[AVAILABILITY]"
+  salary_expectation: "[SALARY]"
+  start_date: "[START_DATE]"
   why_this_company: ""
 preferences:
   job_types: [internship]

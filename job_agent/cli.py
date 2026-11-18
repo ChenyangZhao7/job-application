@@ -160,3 +160,7 @@ def resolve(
     """Resolve an unknown submission."""
     _tracker().mark(platform, job_id, status_value)
     rprint(f"resolved {platform}/{job_id} → {status_value}")
+
+
+if __name__ == "__main__":
+    app()
