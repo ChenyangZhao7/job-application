@@ -42,11 +42,22 @@ def _language(detail: JobDetail, profile: Profile) -> str:
 
 
 class ApiWriter:
-    def __init__(self, client, model: str, prompt_path: Path | None = None, max_chars: int = 300):
+    def __init__(
+        self,
+        client,
+        model: str,
+        prompt_path: Path | None = None,
+        max_chars: int = 300,
+        memory: str = "",
+    ):
         self.client = client
         self.model = model
         self.prompt_path = prompt_path
         self.max_chars = max_chars
+        self.memory = memory
+        self.backend = "api"
+        self.provider = model
+        self.memory_version = ""
 
     def _template(self) -> str:
         if self.prompt_path and Path(self.prompt_path).exists():
@@ -79,7 +90,7 @@ class ApiWriter:
         memory: str = "",
         questions: list[str] | None = None,
     ) -> AnswerSet:
-        prompt = self.build_prompt(detail, profile, memory, questions or [])
+        prompt = self.build_prompt(detail, profile, memory or self.memory, questions or [])
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
